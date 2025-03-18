@@ -11,7 +11,10 @@ output: html_document
 Load the `"nycflights13"` package.  You'll also need to load `dplyr` or `tidyverse`, if you didn't above.
 
 ```{r}
-library(tidyverse)
+#library(tidyverse)
+library(dplyr)
+library(magrittr)
+library(ggplot2)
 #install.packages("nycflights13")
 library(nycflights13)
 my_flights <- flights # store my own version
@@ -24,13 +27,17 @@ my_flights <- na.omit(my_flights) ## this dataset has data on cancelled flights 
 Create a dataframe of the average arrival delays for each _destination_
 
 ```{r}
-
+avg_arrival_delays <- flights %>% group_by(dest) %>%summarise(avg_arr_delay = mean(arr_delay, na.rm = TRUE)) %>% arrange(desc(avg_arr_delay))         
+avg_arrival_delays
 ```
 
 Then use `left_join()` to join on the "airports" dataframe, which has the airport information.
 
 ```{r}
+arrival_with_airports <- avg_arrival_delays %>%
+  left_join(airports, by = c("dest" = "faa"))
 
+arrival_with_airports
 ```
 
 
@@ -39,7 +46,12 @@ Note here: the column names don't match anymore!
 Which airport had the largest average arrival delay?
 
 ```{r}
+largest_delay_airport <- arrival_with_airports %>%
+  arrange(desc(avg_arr_delay)) %>%
+  slice(1) %>% 
+  select(name, avg_arr_delay)
 
+largest_delay_airport
 ```
 
 
@@ -48,16 +60,26 @@ What is the average departure delay for each airline? To answer this with someth
 
 
 ```{r}
+avg_departure_delays <- flights %>%
+  group_by(carrier) %>% 
+  summarise(avg_dep_delay = mean(dep_delay, na.rm = TRUE)) %>% 
+  arrange(desc(avg_dep_delay)) 
 
 
-````
+avg_departure_delays_with_names <- avg_departure_delays %>%
+  left_join(airlines, by = c("carrier" = "carrier")) 
+
+```
 
 Which airline had the smallest average departure delay? 
 
-
-
 ```{r}
+smallest_delay_airport <- arrival_with_airports %>%
+  arrange(avg_arr_delay) %>% 
+  slice(1) %>% 
+  select(name, avg_arr_delay) 
 
+smallest_delay_airport
 
 
 ```
@@ -87,3 +109,11 @@ flights %>%
 
 What does anti_join(flights, airports, by = c("dest" = "faa")) tell you? What does anti_join(airports, flights, by = c("faa" = "dest")) tell you?
 Perform the two joins below and consider what the results are. 
+
+```{r}
+#missing airports
+anti_join(flights, airports, by = c("dest" = "faa"))
+#unused airports
+anti_join(airports, flights, by = c("faa" = "dest"))
+
+```
